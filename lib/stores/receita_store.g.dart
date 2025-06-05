@@ -1,0 +1,86 @@
+// GENERATED CODE - DO NOT MODIFY BY HAND
+
+part of 'receita_store.dart';
+
+// **************************************************************************
+// StoreGenerator
+// **************************************************************************
+
+// ignore_for_file: non_constant_identifier_names, unnecessary_brace_in_string_interps, unnecessary_lambdas, prefer_expression_function_bodies, lines_longer_than_80_chars, avoid_as, avoid_annotating_with_dynamic, no_leading_underscores_for_local_identifiers
+
+mixin _$ReceitaStore on _ReceitaStoreBase, Store {
+  late final _$receitasAtom =
+      Atom(name: '_ReceitaStoreBase.receitas', context: context);
+
+  @override
+  ObservableList<Receita> get receitas {
+    _$receitasAtom.reportRead();
+    return super.receitas;
+  }
+
+  @override
+  set receitas(ObservableList<Receita> value) {
+    _$receitasAtom.reportWrite(value, super.receitas, () {
+      super.receitas = value;
+    });
+  }
+
+  late final _$carregandoAtom =
+      Atom(name: '_ReceitaStoreBase.carregando', context: context);
+
+  @override
+  bool get carregando {
+    _$carregandoAtom.reportRead();
+    return super.carregando;
+  }
+
+  @override
+  set carregando(bool value) {
+    _$carregandoAtom.reportWrite(value, super.carregando, () {
+      super.carregando = value;
+    });
+  }
+
+  late final _$erroAtom =
+      Atom(name: '_ReceitaStoreBase.erro', context: context);
+
+  @override
+  String? get erro {
+    _$erroAtom.reportRead();
+    return super.erro;
+  }
+
+  @override
+  set erro(String? value) {
+    _$erroAtom.reportWrite(value, super.erro, () {
+      super.erro = value;
+    });
+  }
+
+  late final _$carregarReceitasLocaisAsyncAction =
+      AsyncAction('_ReceitaStoreBase.carregarReceitasLocais', context: context);
+
+  @override
+  Future<void> carregarReceitasLocais() {
+    return _$carregarReceitasLocaisAsyncAction
+        .run(() => super.carregarReceitasLocais());
+  }
+
+  late final _$sincronizarReceitasAsyncAction =
+      AsyncAction('_ReceitaStoreBase.sincronizarReceitas', context: context);
+
+  @override
+  Future<void> sincronizarReceitas() {
+    return _$sincronizarReceitasAsyncAction
+        .run(() => super.sincronizarReceitas());
+  }
+
+  @override
+  String toString() {
+    return '''
+receitas: ${receitas},
+carregando: ${carregando},
+erro: ${erro}
+    ''';
+  }
+}
