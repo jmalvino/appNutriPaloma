@@ -1,47 +1,36 @@
-import 'package:app_nutripaloma/core/dao/receita_dao.dart';
-import 'package:app_nutripaloma/core/services/receita_service.dart';
-import 'package:app_nutripaloma/models/receita_model.dart';
+import 'dart:convert';
 import 'package:mobx/mobx.dart';
+import 'package:http/http.dart' as http;
+import 'package:app_nutripaloma/models/receita_model.dart';
 
 part 'receita_store.g.dart';
 
-class ReceitaStore = _ReceitaStoreBase with _$ReceitaStore;
+class ReceitasStore = _ReceitasStore with _$ReceitasStore;
 
-abstract class _ReceitaStoreBase with Store {
-  final ReceitaDAO _dao = ReceitaDAO();
-  final ReceitaService _service = ReceitaService();
-
+abstract class _ReceitasStore with Store {
   @observable
   ObservableList<Receita> receitas = ObservableList<Receita>();
 
   @observable
   bool carregando = false;
 
-  @observable
-  String? erro;
-
   @action
-  Future<void> carregarReceitasLocais() async {
-    try {
-      final lista = await _dao.listarReceitas();
-      receitas = ObservableList<Receita>.of(lista);
-    } catch (e) {
-      erro = 'Erro ao carregar receitas locais: $e';
-    }
-  }
-
-  @action
-  Future<void> sincronizarReceitas() async {
+  Future<void> carregarReceitas() async {
     carregando = true;
-    erro = null;
-
     try {
-      final lista = await _service.buscarReceitas();
-      await _dao.limparReceitas();
-      await _dao.salvarListaReceitas(lista);
-      receitas = ObservableList<Receita>.of(lista);
+      final response = await http.get(Uri.parse(
+        'https://nutripalomamartins.com.br/receitas/receitas.json',
+      ));
+
+      if (response.statusCode == 200) {
+        final List data = json.decode(response.body);
+        receitas.clear();
+        receitas.addAll(data.map((e) => Receita.fromJson(e)).toList());
+      } else {
+        throw Exception('Erro ao carregar receitas');
+      }
     } catch (e) {
-      erro = 'Erro ao sincronizar receitas: $e';
+      print('❌ Erro: $e');
     } finally {
       carregando = false;
     }

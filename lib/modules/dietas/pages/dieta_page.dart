@@ -30,15 +30,27 @@ class _DietaPageState extends State<DietaPage> {
     final usuario = await UsuarioDAO().getUsuario();
 
     if (usuario != null) {
-      await dietasStore.carregarDietas(usuario);
+      try {
+        await dietasStore.carregarDietas(usuario);
+      } catch (e) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.toString().replaceAll('Exception: ', '⚠️ ')),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     } else {
-      // Pode redirecionar para o login ou mostrar uma mensagem de erro
       if (!mounted) return;
       Navigator.pushReplacementNamed(context, '/login');
     }
   }
 
+
   void _abrirPdf(String url) {
+    debugPrint('🔗 URL do PDF: $url');
+
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -48,31 +60,53 @@ class _DietaPageState extends State<DietaPage> {
             actions: [
               IconButton(
                 icon: const Icon(Icons.share),
-                onPressed: () => _compartilharPdf(url),
-              ),
-              IconButton(
-                icon: const Icon(Icons.delete),
-                tooltip: 'Limpar PDFs locais',
-                onPressed: _limparPdfsLocais,
+                onPressed: () async {
+                  try {
+                    final response = await http.get(Uri.parse(url));
+                    if (response.statusCode == 200) {
+                      final dir = await getTemporaryDirectory();
+                      final fileName = url.split('/').last;
+                      final file = File('${dir.path}/$fileName');
+                      await file.writeAsBytes(response.bodyBytes);
+
+                      final params = ShareParams(
+                        files: [XFile(file.path)],
+                        text: 'Confira essa dieta em anexo!',
+                      );
+
+                      final result = await SharePlus.instance.share(params);
+                      if (result.status == ShareResultStatus.success) {
+                        debugPrint('✅ PDF compartilhado com sucesso.');
+                      }
+                    } else {
+                      debugPrint('❌ Erro HTTP ${response.statusCode} ao baixar o PDF');
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Erro ao baixar o PDF')),
+                      );
+                    }
+                  } catch (e) {
+                    debugPrint('❌ Erro ao compartilhar PDF: $e');
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Erro no compartilhamento')),
+                    );
+                  }
+                },
               ),
             ],
           ),
-          body: FutureBuilder<File>(
-            future: _carregarPdfLocal(url),
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Center(child: CircularProgressIndicator());
-              } else if (snapshot.hasError || !snapshot.hasData) {
-                return Center(child: Text('Erro ao carregar PDF'));
-              } else {
-                return PDF().fromPath(snapshot.data!.path);
-              }
+          body: PDF().cachedFromUrl(
+            url,
+            placeholder: (progress) => Center(child: Text('$progress%')),
+            errorWidget: (error) {
+              debugPrint('❌ Erro ao carregar PDF: $error');
+              return Center(child: Text('Erro ao carregar PDF: $error'));
             },
           ),
         ),
       ),
     );
   }
+
 
   Future<void> _compartilharPdf(String url) async {
     try {

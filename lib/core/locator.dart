@@ -9,5 +9,5 @@ final getIt = GetIt.instance;
 void setupLocator() {
   getIt.registerLazySingleton(() => UsuarioControllerStore());
   getIt.registerLazySingleton(() => DietasStore());
-  getIt.registerLazySingleton(() => ReceitaStore());
+  getIt.registerLazySingleton(() => ReceitasStore());
 }

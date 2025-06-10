@@ -78,8 +78,13 @@ class _HomePageState extends State<HomePage> {
                 const SizedBox(height: 20),
                 if (email == 'admin@nutripaloma.com')
                   ElevatedButton(
-                    onPressed: () => Navigator.pushNamed(context, '/nova-receita'),
+                    onPressed: () => Navigator.pushNamed(context, '/upload-receitas'),
                     child: const Text('➕ Nova Receita (Admin)'),
+                  ),
+                if (email == 'admin@nutripaloma.com')
+                  ElevatedButton(
+                    onPressed: () => Navigator.pushNamed(context, '/upload-dieta'),
+                    child: const Text('➕ Nova Dieta (Admin)'),
                   ),
               ],
             ),

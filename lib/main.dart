@@ -1,8 +1,6 @@
 import 'package:app_nutripaloma/core/dao/usuario_dao.dart';
 import 'package:app_nutripaloma/core/locator.dart';
 import 'package:app_nutripaloma/core/routes/app_routes.dart';
-import 'package:app_nutripaloma/stores/dietas_store.dart';
-import 'package:app_nutripaloma/stores/usuario_controller_store.dart';
 import 'package:flutter/material.dart';
 import 'package:get_it/get_it.dart';
 import 'package:shared_preferences/shared_preferences.dart';

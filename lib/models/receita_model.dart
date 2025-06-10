@@ -1,35 +1,13 @@
 class Receita {
-  final int? id;
   final String titulo;
-  final String ingredientes;
-  final String modoPreparo;
-  final String imagemUrl;
+  final String url;
 
-  Receita({
-    this.id,
-    required this.titulo,
-    required this.ingredientes,
-    required this.modoPreparo,
-    required this.imagemUrl,
-  });
+  Receita({required this.titulo, required this.url});
 
-  Map<String, dynamic> toMap() {
-    return {
-      'id': id,
-      'titulo': titulo,
-      'ingredientes': ingredientes,
-      'modoPreparo': modoPreparo,
-      'imagemUrl': imagemUrl,
-    };
-  }
-
-  factory Receita.fromMap(Map<String, dynamic> map) {
+  factory Receita.fromJson(Map<String, dynamic> json) {
     return Receita(
-      id: map['id'],
-      titulo: map['titulo'],
-      ingredientes: map['ingredientes'],
-      modoPreparo: map['modoPreparo'],
-      imagemUrl: map['imagemUrl'],
+      titulo: json['titulo'],
+      url: json['arquivo'],
     );
   }
 }

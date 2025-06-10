@@ -21,10 +21,16 @@ class PdfViewerPage extends StatelessWidget {
           ),
         ],
       ),
-      body: const PDF().cachedFromUrl(
+      body: PDF().cachedFromUrl(
         url,
-        placeholder: (progress) => Center(child: Text('$progress %')),
-        errorWidget: (error) => Center(child: Text('Erro ao carregar PDF')),
+        headers: {
+          "User-Agent": "Mozilla/5.0",
+        },
+        placeholder: (progress) => Center(child: Text('$progress%')),
+        errorWidget: (error) {
+          debugPrint('Erro PDF: $error');
+          return Center(child: Text('Erro: $error'));
+        },
       ),
     );
   }

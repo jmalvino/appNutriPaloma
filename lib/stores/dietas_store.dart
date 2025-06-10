@@ -1,34 +1,46 @@
+import 'dart:convert';
 import 'package:mobx/mobx.dart';
 import 'package:app_nutripaloma/models/usuario_model.dart';
-import 'package:app_nutripaloma/core/services/usuario_service.dart';
+import 'package:http/http.dart' as http;
 
 part 'dietas_store.g.dart';
 
-class DietasStore = _DietasStoreBase with _$DietasStore;
+class DietasStore = _DietasStore with _$DietasStore;
 
-abstract class _DietasStoreBase with Store {
-  final UsuarioService _usuarioService = UsuarioService();
-
+abstract class _DietasStore with Store {
   @observable
-  List<String> pdfs = [];
+  ObservableList<String> pdfs = ObservableList<String>();
 
   @observable
   bool carregando = false;
 
-  @observable
-  String? erro;
-
   @action
   Future<void> carregarDietas(Usuario usuario) async {
     carregando = true;
-    erro = null;
+    pdfs.clear();
+
     try {
-      final dados = await _usuarioService.buscarUsuarioPorEmail(usuario.email);
-      pdfs = dados?.materialPremiumLinks ?? [];
+      final response = await http.get(Uri.parse(
+        'https://nutripalomamartins.com.br/api_nutri/dietas.php?email=${usuario.email}',
+      ));
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        if (data is List) {
+          pdfs.addAll(List<String>.from(data));
+        } else if (data is Map && data.containsKey('erro')) {
+          throw Exception(data['erro']);
+        } else {
+          throw Exception('Resposta inesperada da API.');
+        }
+      } else {
+        throw Exception('Erro ${response.statusCode} ao buscar dietas.');
+      }
     } catch (e) {
-      erro = 'Erro ao buscar dietas';
+      rethrow; // Repassa o erro para ser tratado fora
     } finally {
       carregando = false;
     }
   }
+
 }
