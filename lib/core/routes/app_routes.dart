@@ -4,6 +4,7 @@ import 'package:app_nutripaloma/modules/auth/pages/escolha_login_cadastro_page.d
 import 'package:app_nutripaloma/modules/auth/pages/login_page.dart';
 import 'package:app_nutripaloma/modules/configuracao/pages/configuracao_page.dart';
 import 'package:app_nutripaloma/modules/dietas/pages/dieta_page.dart';
+import 'package:app_nutripaloma/modules/dietas/pages/gerenciar_dietas_page.dart';
 import 'package:app_nutripaloma/modules/dietas/pages/upload_dieta_page.dart';
 import 'package:app_nutripaloma/modules/home/pages/home_page.dart';
 import 'package:app_nutripaloma/modules/premium/pages/premium_page.dart';
@@ -24,6 +25,7 @@ class AppRoutes {
     '/escolha-login-ou-cadastro': (_) => const EscolhaLoginCadastroPage(),
     '/upload-dieta': (_) => const UploadDietaPage(),
     '/upload-receitas': (_) => const UploadReceitaPage(),
+    '/gerenciar-dieta': (_) => const DietasAdminPage(),
 
 
   };

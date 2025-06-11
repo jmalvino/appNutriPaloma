@@ -86,6 +86,12 @@ class _HomePageState extends State<HomePage> {
                     onPressed: () => Navigator.pushNamed(context, '/upload-dieta'),
                     child: const Text('➕ Nova Dieta (Admin)'),
                   ),
+                if (email == 'admin@nutripaloma.com')
+                  ElevatedButton(
+                    onPressed: () => Navigator.pushNamed(context, '/gerenciar-dieta'),
+                    child: const Text('Gerenciar Dieta (Admin)'),
+                  ),
+
               ],
             ),
           ),

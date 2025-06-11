@@ -47,9 +47,17 @@ class _UploadDietaPageState extends State<UploadDietaPage> {
         data: formData,
       );
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Resposta: ${response.data}')),
-      );
+      if (response.statusCode == 200) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('✅ Dieta enviada com sucesso!')),
+        );
+      } else{
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Resposta: ${response.data}')),
+        );
+      }
+
+
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Erro ao enviar: $e')),

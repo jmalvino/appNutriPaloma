@@ -48,6 +48,15 @@ mixin _$DietasStore on _DietasStore, Store {
     return _$carregarDietasAsyncAction.run(() => super.carregarDietas(usuario));
   }
 
+  late final _$carregarDietasAdminAsyncAction =
+      AsyncAction('_DietasStore.carregarDietasAdmin', context: context);
+
+  @override
+  Future<List<String>> carregarDietasAdmin(String email) {
+    return _$carregarDietasAdminAsyncAction
+        .run(() => super.carregarDietasAdmin(email));
+  }
+
   @override
   String toString() {
     return '''
