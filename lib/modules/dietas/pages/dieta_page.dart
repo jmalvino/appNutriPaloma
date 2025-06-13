@@ -9,6 +9,7 @@ import 'package:flutter_cached_pdfview/flutter_cached_pdfview.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:get_it/get_it.dart';
+import 'package:app_nutripaloma/models/dieta_model.dart';
 
 class DietaPage extends StatefulWidget {
   const DietaPage({super.key});
@@ -47,25 +48,24 @@ class _DietaPageState extends State<DietaPage> {
     }
   }
 
-
-  void _abrirPdf(String url) {
-    debugPrint('🔗 URL do PDF: $url');
+  void _abrirPdf(DietaModel dieta) {
+    debugPrint('🔗 URL do PDF: ${dieta.url}');
 
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (_) => Scaffold(
           appBar: AppBar(
-            title: const Text("Visualizar PDF"),
+            title: Text(dieta.titulo),
             actions: [
               IconButton(
                 icon: const Icon(Icons.share),
                 onPressed: () async {
                   try {
-                    final response = await http.get(Uri.parse(url));
+                    final response = await http.get(Uri.parse(dieta.url));
                     if (response.statusCode == 200) {
                       final dir = await getTemporaryDirectory();
-                      final fileName = url.split('/').last;
+                      final fileName = dieta.nomeArquivo;
                       final file = File('${dir.path}/$fileName');
                       await file.writeAsBytes(response.bodyBytes);
 
@@ -95,7 +95,7 @@ class _DietaPageState extends State<DietaPage> {
             ],
           ),
           body: PDF().cachedFromUrl(
-            url,
+            dieta.url,
             placeholder: (progress) => Center(child: Text('$progress%')),
             errorWidget: (error) {
               debugPrint('❌ Erro ao carregar PDF: $error');
@@ -124,15 +124,11 @@ class _DietaPageState extends State<DietaPage> {
           return ListView.builder(
             itemCount: dietasStore.pdfs.length,
             itemBuilder: (context, index) {
-              final url = dietasStore.pdfs[index];
-              final nome = url.split('/').last;
+              final dieta = dietasStore.pdfs[index];
               return ListTile(
                 leading: const Icon(Icons.picture_as_pdf),
-                title: Text(
-                  nome,
-                  style: const TextStyle(fontWeight: FontWeight.w500),
-                ),
-                onTap: () => _abrirPdf(url),
+                title: Text(dieta.titulo),
+                onTap: () => _abrirPdf(dieta),
               );
             },
           );

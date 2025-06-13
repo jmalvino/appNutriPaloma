@@ -12,6 +12,7 @@ class UploadDietaPage extends StatefulWidget {
 
 class _UploadDietaPageState extends State<UploadDietaPage> {
   final emailController = TextEditingController();
+  final tituloController = TextEditingController();
   File? arquivoSelecionado;
 
   Future<void> selecionarArquivo() async {
@@ -28,9 +29,12 @@ class _UploadDietaPageState extends State<UploadDietaPage> {
   }
 
   Future<void> enviarArquivo() async {
-    if (arquivoSelecionado == null || emailController.text.isEmpty) {
+    final email = emailController.text.trim();
+    final titulo = tituloController.text.trim();
+
+    if (arquivoSelecionado == null || email.isEmpty || titulo.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Informe o email e selecione um arquivo')),
+        const SnackBar(content: Text('Preencha todos os campos e selecione um arquivo')),
       );
       return;
     }
@@ -38,8 +42,12 @@ class _UploadDietaPageState extends State<UploadDietaPage> {
     try {
       final dio = Dio();
       final formData = FormData.fromMap({
-        'email': emailController.text.trim(),
-        'arquivo': await MultipartFile.fromFile(arquivoSelecionado!.path, filename: arquivoSelecionado!.path.split('/').last),
+        'email': email,
+        'titulo': titulo,
+        'arquivo': await MultipartFile.fromFile(
+          arquivoSelecionado!.path,
+          filename: arquivoSelecionado!.path.split('/').last,
+        ),
       });
 
       final response = await dio.post(
@@ -49,20 +57,28 @@ class _UploadDietaPageState extends State<UploadDietaPage> {
 
       if (response.statusCode == 200) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('✅ Dieta enviada com sucesso!')),
+          const SnackBar(content: Text('✅ Dieta enviada com sucesso!')),
         );
-      } else{
+        emailController.clear();
+        tituloController.clear();
+        setState(() => arquivoSelecionado = null);
+      } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Resposta: ${response.data}')),
         );
       }
-
-
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Erro ao enviar: $e')),
       );
     }
+  }
+
+  @override
+  void dispose() {
+    emailController.dispose();
+    tituloController.dispose();
+    super.dispose();
   }
 
   @override
@@ -76,6 +92,11 @@ class _UploadDietaPageState extends State<UploadDietaPage> {
             TextField(
               controller: emailController,
               decoration: const InputDecoration(labelText: 'Email do usuário'),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: tituloController,
+              decoration: const InputDecoration(labelText: 'Título da dieta'),
             ),
             const SizedBox(height: 16),
             ElevatedButton.icon(

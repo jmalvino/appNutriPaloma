@@ -1,7 +1,9 @@
-// ReceitasPage com exclusão de receita via long press (admin)
-import 'dart:convert';
+import 'package:app_nutripaloma/models/receita_model.dart';
+import 'package:app_nutripaloma/stores/receita_store.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_cached_pdfview/flutter_cached_pdfview.dart';
+import 'package:flutter_mobx/flutter_mobx.dart';
+import 'package:get_it/get_it.dart';
 import 'package:http/http.dart' as http;
 
 class ReceitasPage extends StatefulWidget {
@@ -12,42 +14,12 @@ class ReceitasPage extends StatefulWidget {
 }
 
 class _ReceitasPageState extends State<ReceitasPage> {
-  List<Map<String, dynamic>> receitas = [];
-  bool carregando = true;
+  final receitasStore = GetIt.I<ReceitasStore>();
 
   @override
   void initState() {
     super.initState();
-    carregarReceitas();
-  }
-
-  Future<void> carregarReceitas() async {
-    setState(() => carregando = true);
-
-    try {
-      final response = await http.get(Uri.parse('https://nutripalomamartins.com.br/receitas/receitas.json'));
-
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        if (data is List) {
-          setState(() {
-            receitas = List<Map<String, dynamic>>.from(data);
-          });
-        }
-      } else {
-        _mostrarErro('Erro ao carregar receitas: ${response.statusCode}');
-      }
-    } catch (e) {
-      _mostrarErro('Erro ao buscar receitas: $e');
-    } finally {
-      setState(() => carregando = false);
-    }
-  }
-
-  void _mostrarErro(String msg) {
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
-    }
+    receitasStore.carregarReceitas();
   }
 
   void _abrirPdf(String url) {
@@ -66,13 +38,12 @@ class _ReceitasPageState extends State<ReceitasPage> {
     );
   }
 
-  void _confirmarExclusao(int index) async {
-    final receita = receitas[index];
+  Future<void> _confirmarExclusao(Receita receita) async {
     final confirmado = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Excluir Receita'),
-        content: Text('Deseja realmente excluir "${receita['titulo']}"?'),
+        content: Text('Deseja realmente excluir "${receita.titulo}"?'),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancelar')),
           TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Excluir')),
@@ -82,14 +53,24 @@ class _ReceitasPageState extends State<ReceitasPage> {
 
     if (confirmado == true) {
       try {
+        print('🔁 Deletando receita ID: ${receita.id}');
+        print('🛰️ Enviando para: https://nutripalomamartins.com.br/api_nutri/delete_receita.php');
+
         final response = await http.post(
-          Uri.parse('https://nutripalomamartins.com.br/api_nutri/remover_receita.php'),
-          body: {'arquivo': receita['arquivo'].toString().split('/').last},
+          Uri.parse('https://nutripalomamartins.com.br/api_nutri/delete_receita.php'),
+          body: {'id': receita.id.toString()},
         );
 
+        print('📥 Status code: ${response.statusCode}');
+        print('📦 Body: ${response.body}');
+
         if (response.statusCode == 200 && response.body.contains('sucesso')) {
-          setState(() => receitas.removeAt(index));
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Receita excluída com sucesso.')));
+          receitasStore.receitas.removeWhere((r) => r.id == receita.id);
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Receita excluída com sucesso.')),
+            );
+          }
         } else {
           _mostrarErro('Erro ao excluir receita.');
         }
@@ -99,27 +80,37 @@ class _ReceitasPageState extends State<ReceitasPage> {
     }
   }
 
+  void _mostrarErro(String msg) {
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    if (carregando) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
-    }
-
     return Scaffold(
       appBar: AppBar(title: const Text('Receitas')),
-      body: receitas.isEmpty
-          ? const Center(child: Text('Nenhuma receita disponível.'))
-          : ListView.builder(
-        itemCount: receitas.length,
-        itemBuilder: (context, index) {
-          final receita = receitas[index];
-          return ListTile(
-            leading: const Icon(Icons.receipt_long),
-            title: Text(receita['titulo'] ?? 'Sem título'),
-            onTap: () => _abrirPdf(receita['arquivo']),
-            onLongPress: () => _confirmarExclusao(index),
+      body: Observer(
+        builder: (_) {
+          if (receitasStore.carregando) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          if (receitasStore.receitas.isEmpty) {
+            return const Center(child: Text('Nenhuma receita disponível.'));
+          }
+
+          return ListView.builder(
+            itemCount: receitasStore.receitas.length,
+            itemBuilder: (context, index) {
+              final receita = receitasStore.receitas[index];
+              return ListTile(
+                leading: const Icon(Icons.receipt_long),
+                title: Text(receita.titulo),
+                onTap: () => _abrirPdf(receita.url),
+                onLongPress: () => _confirmarExclusao(receita),
+              );
+            },
           );
         },
       ),

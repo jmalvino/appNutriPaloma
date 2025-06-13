@@ -12,13 +12,13 @@ mixin _$DietasStore on _DietasStore, Store {
   late final _$pdfsAtom = Atom(name: '_DietasStore.pdfs', context: context);
 
   @override
-  ObservableList<String> get pdfs {
+  ObservableList<DietaModel> get pdfs {
     _$pdfsAtom.reportRead();
     return super.pdfs;
   }
 
   @override
-  set pdfs(ObservableList<String> value) {
+  set pdfs(ObservableList<DietaModel> value) {
     _$pdfsAtom.reportWrite(value, super.pdfs, () {
       super.pdfs = value;
     });

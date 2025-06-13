@@ -51,9 +51,9 @@ class _UploadReceitaPageState extends State<UploadReceitaPage> {
         ..files.add(await http.MultipartFile.fromPath('arquivo', _arquivoSelecionado!.path));
 
       final response = await request.send();
-
       final resposta = await response.stream.bytesToString();
-      if (response.statusCode == 200) {
+
+      if (response.statusCode == 200 && resposta.contains('sucesso')) {
         _mostrarSnackbar('✅ Receita enviada com sucesso!');
         _tituloController.clear();
         setState(() => _arquivoSelecionado = null);
@@ -104,7 +104,11 @@ class _UploadReceitaPageState extends State<UploadReceitaPage> {
               onPressed: _enviando ? null : _enviarReceita,
               icon: const Icon(Icons.upload_file),
               label: _enviando
-                  ? const CircularProgressIndicator()
+                  ? const SizedBox(
+                height: 16,
+                width: 16,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              )
                   : const Text("Enviar Receita"),
             ),
           ],

@@ -23,16 +23,41 @@ abstract class _ReceitasStore with Store {
       ));
 
       if (response.statusCode == 200) {
-        final List data = json.decode(response.body);
-        receitas.clear();
-        receitas.addAll(data.map((e) => Receita.fromJson(e)).toList());
+        final data = json.decode(response.body);
+        if (data is List) {
+          receitas.clear();
+          receitas.addAll(data.map((e) => Receita.fromJson(e)).toList());
+        } else {
+          throw Exception('Formato inválido no JSON de receitas.');
+        }
       } else {
-        throw Exception('Erro ao carregar receitas');
+        throw Exception('Erro ao carregar receitas: ${response.statusCode}');
       }
     } catch (e) {
-      print('❌ Erro: $e');
+      print('❌ Erro ao carregar receitas: $e');
     } finally {
       carregando = false;
+    }
+  }
+
+  @action
+  Future<bool> excluirReceita(int id) async {
+    try {
+      final response = await http.post(
+        Uri.parse('https://nutripalomamartins.com.br/api_nutri/delete_receita.php'),
+        body: {'id_receita': id.toString()},
+      );
+
+      if (response.statusCode == 200 && response.body.contains('sucesso')) {
+        receitas.removeWhere((r) => r.id == id);
+        return true;
+      } else {
+        print('❌ Erro ao excluir receita: ${response.body}');
+        return false;
+      }
+    } catch (e) {
+      print('❌ Erro na exclusão da receita: $e');
+      return false;
     }
   }
 }

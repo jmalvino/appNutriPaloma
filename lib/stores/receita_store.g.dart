@@ -49,6 +49,14 @@ mixin _$ReceitasStore on _ReceitasStore, Store {
     return _$carregarReceitasAsyncAction.run(() => super.carregarReceitas());
   }
 
+  late final _$excluirReceitaAsyncAction =
+      AsyncAction('_ReceitasStore.excluirReceita', context: context);
+
+  @override
+  Future<bool> excluirReceita(int id) {
+    return _$excluirReceitaAsyncAction.run(() => super.excluirReceita(id));
+  }
+
   @override
   String toString() {
     return '''

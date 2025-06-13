@@ -1,5 +1,5 @@
 import 'dart:convert';
-
+import 'package:app_nutripaloma/models/dieta_model.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_cached_pdfview/flutter_cached_pdfview.dart';
 import 'package:http/http.dart' as http;
@@ -13,8 +13,32 @@ class DietasAdminPage extends StatefulWidget {
 
 class _DietasAdminPageState extends State<DietasAdminPage> {
   final emailController = TextEditingController();
-  List<String> dietas = [];
+  List<DietaModel> dietas = [];
   bool carregando = false;
+
+  Future<int> buscarIdUsuario(String email) async {
+    final url = 'https://nutripalomamartins.com.br/api_nutri/usuarios.json';
+    debugPrint('🔎 Buscando ID do usuário em: $url');
+
+    final response = await http.get(Uri.parse(url));
+    debugPrint('🔁 Status code: ${response.statusCode}');
+    debugPrint('📥 Body: ${response.body}');
+
+    if (response.statusCode == 200) {
+      final List<dynamic> data = json.decode(response.body);
+
+      for (var u in data) {
+        if (u['email'].toString().toLowerCase() == email.toLowerCase()) {
+          debugPrint('✅ ID do usuário encontrado: ${u['id']}');
+          return u['id'];
+        }
+      }
+
+      throw Exception('Usuário com e-mail "$email" não encontrado.');
+    } else {
+      throw Exception('Erro ao buscar usuários: ${response.statusCode}');
+    }
+  }
 
   Future<void> buscarDietas() async {
     final email = emailController.text.trim();
@@ -26,16 +50,30 @@ class _DietasAdminPageState extends State<DietasAdminPage> {
     });
 
     try {
-      final response = await http.get(Uri.parse('https://nutripalomamartins.com.br/api_nutri/dietas.php?email=$email'));
+      final idUsuario = await buscarIdUsuario(email);
+      final url = 'https://nutripalomamartins.com.br/dietas/$idUsuario/dietas.json';
+      debugPrint('📡 Buscando dietas em: $url');
+
+      final response = await http.get(Uri.parse(url));
+      debugPrint('🔁 Status code: ${response.statusCode}');
+      debugPrint('📥 Body: ${response.body}');
+
       if (response.statusCode == 200) {
-        final List<dynamic> data = List.from(jsonDecode(response.body));
-        setState(() {
-          dietas = data.cast<String>();
-        });
+        final data = jsonDecode(response.body);
+        if (data is List) {
+          setState(() {
+            dietas = data.map((e) => DietaModel.fromJson(e)).toList();
+            debugPrint('📄 Dietas carregadas: ${dietas.length}');
+          });
+        } else {
+          _mostrarErro('❌ Resposta inesperada da API.');
+          debugPrint('⚠️ Tipo de resposta: ${data.runtimeType}');
+        }
       } else {
-        _mostrarErro('Erro: ${response.statusCode}');
+        _mostrarErro('❌ Erro ${response.statusCode} ao buscar dietas.');
       }
     } catch (e) {
+      debugPrint('❌ Exceção ao buscar dietas: $e');
       _mostrarErro('Erro ao buscar dietas: $e');
     } finally {
       setState(() => carregando = false);
@@ -43,11 +81,12 @@ class _DietasAdminPageState extends State<DietasAdminPage> {
   }
 
   void _mostrarErro(String msg) {
-    if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
   }
 
-  void _visualizarPdf(String url) {
+  void _abrirPdf(String url) {
+    debugPrint('📂 Abrindo PDF: $url');
+
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -63,10 +102,10 @@ class _DietasAdminPageState extends State<DietasAdminPage> {
     );
   }
 
-  void _confirmarExclusao(String url) async {
+  Future<void> _confirmarExclusao(DietaModel dieta) async {
     final confirm = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (_) => AlertDialog(
         title: const Text('Excluir Dieta'),
         content: const Text('Deseja realmente excluir esta dieta?'),
         actions: [
@@ -76,21 +115,39 @@ class _DietasAdminPageState extends State<DietasAdminPage> {
       ),
     );
 
-    if (confirm == true) {
-      try {
-        final response = await http.post(
-          Uri.parse('https://nutripalomamartins.com.br/api_nutri/delete_dieta.php'),
-          body: {'arquivo': url.split('/').last},
-        );
-        if (response.statusCode == 200) {
-          setState(() => dietas.remove(url));
+    if (confirm != true) return;
+
+    final email = emailController.text.trim();
+
+    try {
+      debugPrint('🗑️ Solicitando exclusão da dieta ID ${dieta.id}...');
+      final response = await http.post(
+        Uri.parse('https://nutripalomamartins.com.br/api_nutri/delete_dieta.php'),
+        body: {
+          'email': email,
+          'id_dieta': dieta.id.toString(),
+        },
+      );
+
+      debugPrint('🔁 Status code: ${response.statusCode}');
+      debugPrint('📥 Body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        final body = jsonDecode(response.body);
+        if (body['status'] == 'sucesso') {
+          setState(() {
+            dietas.removeWhere((d) => d.id == dieta.id);
+          });
           _mostrarErro('✅ Dieta excluída com sucesso');
         } else {
-          _mostrarErro('Erro ao excluir dieta');
+          _mostrarErro('Erro: ${body['mensagem']}');
         }
-      } catch (e) {
-        _mostrarErro('Erro: $e');
+      } else {
+        _mostrarErro('Erro ao excluir dieta (${response.statusCode})');
       }
+    } catch (e) {
+      debugPrint('❌ Exceção ao excluir: $e');
+      _mostrarErro('Erro ao excluir dieta: $e');
     }
   }
 
@@ -121,13 +178,13 @@ class _DietasAdminPageState extends State<DietasAdminPage> {
                 child: ListView.builder(
                   itemCount: dietas.length,
                   itemBuilder: (context, index) {
-                    final url = dietas[index];
-                    final nome = url.split('/').last;
+                    final dieta = dietas[index];
                     return ListTile(
-                      title: Text(nome),
-                      onTap: () => _visualizarPdf(url),
-                      onLongPress: () => _confirmarExclusao(url),
+                      title: Text(dieta.titulo),
+                      subtitle: Text(dieta.nomeArquivo),
                       leading: const Icon(Icons.picture_as_pdf),
+                      onTap: () => _abrirPdf(dieta.url),
+                      onLongPress: () => _confirmarExclusao(dieta),
                     );
                   },
                 ),
